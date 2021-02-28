@@ -3,13 +3,11 @@ package banking;
 import java.util.Random;
 
 public class Account {
-    private int id;
-    private int balance;
+    private final int id;
     private final Card card;
 
     public Account(int id) {
         this.id = id;
-        this.balance = 0;
         this.card = new Card();
         this.card.setNumber(this.generateNumber());
         this.card.setPin(this.generatePin());
@@ -17,14 +15,6 @@ public class Account {
 
     public int getId() {
         return this.id;
-    }
-
-    public int getBalance() {
-        return this.balance;
-    }
-
-    public void setBalance(int balance) {
-        this.balance = balance;
     }
 
     public String getNumber() {
@@ -65,8 +55,8 @@ public class Account {
         }
 
         //we calculate the sum of digits
-        for (int i = 0; i < digits.length; i++) {
-            sum += digits[i];
+        for (int digit : digits) {
+            sum += digit;
         }
 
         //we add the check sum that makes our sum divisible by 10
@@ -82,9 +72,8 @@ public class Account {
     private String generatePin() {
         Random random = new Random();
         int randomNumber = random.nextInt(10000);
-        String formattedNumber = String.format("%04d", randomNumber);
 
-        return formattedNumber;
+        return String.format("%04d", randomNumber);
     }
 }
 
