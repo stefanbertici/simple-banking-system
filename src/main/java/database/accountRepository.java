@@ -10,6 +10,8 @@ public class accountRepository {
     private ResultSet rs;
     private final String url;
 
+    //SQLite db (.txt file) name is passed on to the repository
+    //from the command line arguments of the Main class
     public accountRepository(String dbName) {
         this.url = "jdbc:sqlite:" + dbName;
         this.stmt = null;

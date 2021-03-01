@@ -14,21 +14,21 @@ public class Account {
     }
 
     public int getId() {
-        return this.id;
+        return id;
     }
 
     public String getNumber() {
-        return this.card.getNumber();
+        return card.getNumber();
     }
 
     public String getPin() {
-        return this.card.getPin();
+        return card.getPin();
     }
 
 
     private String generateNumber() {
         String issuerIdentificationNumber = "400000";
-        String customerAccountNumber = String.format("%09d", this.id);
+        String customerAccountNumber = String.format("%09d", id);
         StringBuilder number = new StringBuilder();
 
         number.append(issuerIdentificationNumber).append(customerAccountNumber);

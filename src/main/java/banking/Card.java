@@ -10,7 +10,7 @@ public class Card {
     }
 
     public String getNumber() {
-        return this.number;
+        return number;
     }
 
     public void setNumber(String number) {
@@ -18,7 +18,7 @@ public class Card {
     }
 
     public String getPin() {
-        return this.pin;
+        return pin;
     }
 
     public void setPin(String pin) {

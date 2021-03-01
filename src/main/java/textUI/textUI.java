@@ -13,24 +13,26 @@ public class textUI {
     }
 
     public void start() {
-        this.accRepo.openConnectionToDatabase();
-        this.accRepo.createTable();
+        //we open the connection to the database and create the table (if it does not already exist)
+        //at the start of the program
+        accRepo.openConnectionToDatabase();
+        accRepo.createTable();
         Scanner scanner = new Scanner(System.in);
         boolean mainMenu = true;
         String input;
 
         while (mainMenu) {
             System.out.println("\n1. Create an account\n" +
-                    "2. Log into account\n" +
-                    "0. Exit");
+                                 "2. Log into account\n" +
+                                 "0. Exit");
             System.out.print(">");
             input = scanner.nextLine();
 
             switch (input) {
                 case "1" -> {
-                    int nextId = this.accRepo.getLastId() + 1;
+                    int nextId = accRepo.getLastId() + 1;
                     Account newAccount = new Account(nextId);
-                    this.accRepo.addEntry(newAccount);
+                    accRepo.addEntry(newAccount);
                     System.out.println("\nYour account has been created\n" +
                             "Your card number:\n" +
                             newAccount.getNumber() +
@@ -61,13 +63,13 @@ public class textUI {
                             input = scanner.nextLine();
 
                             switch (input) {
-                                case "1" -> System.out.println("\nBalance: " + this.accRepo.getBalance(myAccountId));
+                                case "1" -> System.out.println("\nBalance: " + accRepo.getBalance(myAccountId));
 
                                 case "2" -> {
                                     System.out.println("\nEnter income:");
                                     System.out.print(">");
                                     int value = Integer.parseInt(scanner.nextLine());
-                                    this.accRepo.addToBalance(myAccountId, value);
+                                    accRepo.addToBalance(myAccountId, value);
                                     System.out.println("Income was added!");
                                 }
                                 case "3" -> {
@@ -128,7 +130,7 @@ public class textUI {
         }
     }
 
-    //we check if given number passes Luhn's algorithm
+    //we check if the given number passes the check for Luhn's algorithm
     private boolean validateAccountNumber(String accountNumber) {
         int sum = 0;
         boolean alternate = false;
