@@ -104,6 +104,9 @@ public class accountRepository {
         return lastId;
     }
 
+    /*From this point on we will use inputs in our queries.
+    We'll provide those inputs via PreparedStatement’s setter methods.
+    That way the values received will be treated as only data and no SQL Injection will happen.*/
     public int getAccountId(String accountNumber) {
         String query = "SELECT id FROM card WHERE number = ?;";
         int accountId = -1;
@@ -168,9 +171,6 @@ public class accountRepository {
         }
     }
 
-    //We provide account number and pin to query via PreparedStatement’s setter methods.
-    //Now, the value of username and password received from the request is treated as only data
-    //so no SQL Injection will happen.
     public boolean validateLogin(String myAccountNumber, String myAccountPin) {
         String query = "SELECT * FROM card WHERE number = ? AND pin = ?;";
         boolean canLogin = false;
