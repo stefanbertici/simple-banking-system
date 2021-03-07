@@ -5,224 +5,291 @@ import banking.Account;
 import java.sql.*;
 
 public class accountRepository {
+    private final String url;
     private Connection c;
     private Statement stmt;
+    private PreparedStatement pstmt;
     private ResultSet rs;
-    private final String url;
 
     //SQLite db (.txt file) name is passed on to the repository
     //from the command line arguments of the Main class
     public accountRepository(String dbName) {
         this.url = "jdbc:sqlite:" + dbName;
+        this.c = null;
         this.stmt = null;
+        this.pstmt = null;
+        this.rs = null;
     }
 
     public void openConnectionToDatabase() {
         try {
             c = DriverManager.getConnection(url);
         } catch (Exception e) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
+
+        System.out.println("\n* Connection to database has been successfully opened! *");
     }
 
     public void closeConnectionToDatabase() {
         try {
             c.close();
         } catch (Exception e) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
+
+        System.out.println("\n* Connection to database has been successfully closed! *");
     }
 
     public void createTable() {
+        String query = "CREATE TABLE IF NOT EXISTS card " +
+                "(id      INT," +
+                " number  TEXT," +
+                " pin     TEXT," +
+                " balance INTEGER DEFAULT 0);";
+
         try {
             stmt = c.createStatement();
-            String sql = "CREATE TABLE IF NOT EXISTS card " +
-                    "(id      INT," +
-                    " number  TEXT," +
-                    " pin     TEXT," +
-                    " balance INTEGER DEFAULT 0);";
-            stmt.executeUpdate(sql);
-
-            stmt.close();
+            stmt.executeUpdate(query);
         } catch (Exception e) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                stmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }
 
     /*FOR EMERGENCIES ONLY
     public void deleteTable() {
+        String sql = "DROP TABLE card;";
+
         try {
             stmt = c.createStatement();
-            String sql = "DROP TABLE card;";
             stmt.executeUpdate(sql);
-
-            stmt.close();
         } catch (Exception e) {
             System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+        } finally {
+            try {
+                stmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }*/
 
     public int getLastId() {
+        String query = "SELECT MAX(id) AS id FROM card;";
         int lastId = -1;
 
         try {
             stmt = c.createStatement();
-            String sql = "SELECT MAX(id) AS id FROM card;";
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
+            rs = stmt.executeQuery(query);
+            if (rs.next()) {
                 lastId = rs.getInt("id");
             }
-
-            rs.close();
-            stmt.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                rs.close();
+                stmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
 
         return lastId;
     }
 
-    public int getAccountId(String inputNumber) {
+    public int getAccountId(String accountNumber) {
+        String query = "SELECT id FROM card WHERE number = ?;";
         int accountId = -1;
 
         try {
-            stmt = c.createStatement();
-            String sql = "SELECT id FROM card WHERE number = '" +
-                    inputNumber + "';";
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
+            pstmt = c.prepareStatement(query);
+            pstmt.setString(1, accountNumber);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
                 accountId = rs.getInt("id");
             }
-
-            rs.close();
-            stmt.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                rs.close();
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
 
         return accountId;
     }
 
     public void addEntry(Account account) {
-        try {
-            c.setAutoCommit(false);
-            stmt = c.createStatement();
-            String sql = "INSERT INTO card (id, number, pin, balance) " + "VALUES (" +
-                    account.getId() + ", " +
-                    "'" + account.getNumber() + "', " +
-                    "'" + account.getPin() + "', " +
-                    "0);";
-            stmt.executeUpdate(sql);
+        String query = "INSERT INTO card (id, number, pin, balance) "
+                + "VALUES (?, ?, ?, 0);";
 
-            stmt.close();
-            c.commit();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setInt(1, account.getId());
+            pstmt.setString(2, account.getNumber());
+            pstmt.setString(3, account.getPin());
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }
 
     public void deleteEntry(int myAccountId) {
-        try {
-            c.setAutoCommit(false);
-            stmt = c.createStatement();
-            String sql = "DELETE FROM card WHERE id = " + myAccountId + ";";
-            stmt.executeUpdate(sql);
+        String query = "DELETE FROM card WHERE id = ?;";
 
-            stmt.close();
-            c.commit();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setInt(1, myAccountId);
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }
 
+    //We provide account number and pin to query via PreparedStatement’s setter methods.
+    //Now, the value of username and password received from the request is treated as only data
+    //so no SQL Injection will happen.
     public boolean validateLogin(String myAccountNumber, String myAccountPin) {
-        try {
-            stmt = c.createStatement();
-            String sql = "SELECT number, pin FROM card WHERE number = '" +
-                    myAccountNumber + "' AND pin = '" +
-                    myAccountPin + "';";
-            rs = stmt.executeQuery(sql);
-            if (rs.next()) {
-                return true;
-            }
+        String query = "SELECT * FROM card WHERE number = ? AND pin = ?;";
+        boolean canLogin = false;
 
-            rs.close();
-            stmt.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage());
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setString(1, myAccountNumber);
+            pstmt.setString(2, myAccountPin);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                canLogin = true;
+            }
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                rs.close();
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
 
-        return false;
+        return canLogin;
     }
 
     public boolean accountExists(String accountNumber) {
-        try {
-            stmt = c.createStatement();
-            String sql = "SELECT number FROM card WHERE number = '" +
-                    accountNumber + "';";
-            rs = stmt.executeQuery(sql);
-            if (rs.next()) {
-                return true;
-            }
+        String query = "SELECT number FROM card WHERE number = ?;";
+        boolean doesExist = false;
 
-            rs.close();
-            stmt.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage());
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setString(1, accountNumber);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                doesExist = true;
+            }
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                rs.close();
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
 
-        return false;
+        return doesExist;
     }
 
     public int getBalance(int accountId) {
-        try {
-            stmt = c.createStatement();
-            String sql = "SELECT balance FROM card WHERE id = " + accountId + ";";
-            rs = stmt.executeQuery(sql);
-            if (rs.next()) {
-                return rs.getInt("balance");
-            }
+        String query = "SELECT balance FROM card WHERE id = ?;";
+        int balance = -1;
 
-            rs.close();
-            stmt.close();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage());
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setInt(1, accountId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                balance = rs.getInt("balance");
+            }
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                rs.close();
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
 
-        return -1;
+        return balance;
     }
 
     public void addToBalance(int accountId, int value) {
-        try {
-            c.setAutoCommit(false);
-            stmt = c.createStatement();
-            int newBalance = this.getBalance(accountId) + value;
-            String sql = "UPDATE card SET balance = " + newBalance + " WHERE id = " + accountId + ";";
-            stmt.executeUpdate(sql);
+        int newBalance = this.getBalance(accountId) + value;
+        String query = "UPDATE card SET balance = ? WHERE id = ?;";
 
-            stmt.close();
-            c.commit();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+        try {
+            pstmt = c.prepareStatement(query);
+            pstmt.setInt(1, newBalance);
+            pstmt.setInt(2, accountId);
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }
 
     public void transferMoney(int senderId, int receiverId, int value) {
+        int senderNewBalance = this.getBalance(senderId) - value;
+        int receiverNewBalance = this.getBalance(receiverId) + value;
+        String query = "UPDATE card SET balance = ? WHERE id = ?";
+
         try {
-            c.setAutoCommit(false);
-            stmt = c.createStatement();
-            int senderBalance = this.getBalance(senderId) - value;
-            String sql = "UPDATE card SET balance = " + senderBalance + " WHERE id = " + senderId + ";";
-            stmt.executeUpdate(sql);
-
-            int receiverBalance = this.getBalance(receiverId) + value;
-            sql = "UPDATE card SET balance = " + receiverBalance + " WHERE id = " + receiverId + ";";
-            stmt.executeUpdate(sql);
-
-            stmt.close();
-            c.commit();
-        } catch ( Exception e ) {
-            System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+            pstmt = c.prepareStatement(query);
+            //update sender account balance
+            pstmt.setInt(1, senderNewBalance);
+            pstmt.setInt(2, senderId);
+            pstmt.executeUpdate();
+            //update receiver account balance
+            pstmt.setInt(1, receiverNewBalance);
+            pstmt.setInt(2, receiverId);
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        } finally {
+            try {
+                pstmt.close();
+            } catch (Exception e) {
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
         }
     }
 }
